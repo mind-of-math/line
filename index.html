@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>زوايا المستقيمين والقاطع — عرض ثلاثي الأبعاد</title>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e2b2e;--ink:#f1f5ee;--mut:#9fb8b4;--pan:#14383c;--ln:#2c5c60;--a:#ff5d8f;--b:#35d0ff;--ac:#8ee3a1;--ob:#b79cff;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:'Readex Pro',Tahoma,Arial,sans-serif;line-height:1.6}
+.app{display:grid;grid-template-columns:1fr 360px;height:100%}
+.stage{position:relative;min-height:0;background:radial-gradient(ellipse at 50% 40%,#17484d,var(--bg) 70%)}
+canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+.hint{position:absolute;top:12px;inset-inline:16px;color:var(--mut);font-size:13px;pointer-events:none}
+.legend{position:absolute;bottom:12px;inset-inline:16px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;pointer-events:none}
+.legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-inline-end:6px}
+.panel{background:var(--pan);border-inline-start:1px solid var(--ln);padding:16px;overflow-y:auto}
+h1{font-size:18px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 14px}
+h2{font-size:14px;margin:16px 0 8px;color:var(--mut);font-weight:600}
+.row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+.row label{flex:0 0 96px}
+.row input[type=range]{flex:1;accent-color:var(--b)}
+.row output{flex:0 0 44px;text-align:end;direction:ltr}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;font-size:13px;color:var(--ink);background:transparent;border:1px solid var(--ln);border-radius:8px;padding:5px 10px;cursor:pointer}
+button:hover{background:#1d4a4f}
+button.on{background:var(--b);color:#06242a;border-color:var(--b);font-weight:600}
+button.pc.on{background:var(--a);border-color:var(--a);color:#2b0613}
+button:focus-visible,input:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.badge{display:inline-block;border-radius:20px;padding:2px 12px;font-size:13px;border:1px solid var(--ln)}
+.badge.p{background:#1f5a3a;border-color:#3f9a68}
+.badge.n{background:#5a2a2a;border-color:#a85a5a}
+.read{background:#0e2b2e;border:1px solid var(--ln);border-radius:10px;padding:12px;font-size:14px;min-height:112px}
+.read b{font-size:16px;direction:ltr;unicode-bidi:isolate}
+.ok{color:#8ee3a1}.no{color:#ff9aa8}
+.tbl{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:13px}
+.tbl div{background:#0e2b2e;border:1px solid var(--ln);border-radius:8px;padding:4px 6px;text-align:center}
+.tbl span{display:block;color:var(--mut);font-size:12px}
+.tbl em{font-style:normal;direction:ltr;unicode-bidi:isolate}
+.rule{color:var(--mut);font-size:13px;margin:8px 0 0}
+@media(max-width:820px){
+ html,body{height:auto}
+ .app{grid-template-columns:1fr;height:auto}
+ .stage{height:58vh}
+ .panel{border-inline-start:0;border-top:1px solid var(--ln)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="stage" id="stage">
+  <canvas id="cv"></canvas>
+  <div class="hint">اسحب لتدوير المجسم · انقر على أي زاوية لقياسها</div>
+  <div class="legend">
+   <span><i style="background:#f1f5ee"></i>المستقيمان ل₁ (أعلى) و ل₂ (أسفل)</span>
+   <span><i style="background:#ffa94d"></i>القاطع ق</span>
+   <span><i style="background:var(--ac)"></i>حادة</span>
+   <span><i style="background:var(--ob)"></i>منفرجة</span>
+  </div>
+ </div>
+ <aside class="panel">
+  <h1>زوايا المستقيمين والقاطع</h1>
+  <p class="sub">الصف الأول الثانوي — الهندسة</p>
+
+  <div class="row"><label for="th">زاوية القاطع</label><input id="th" type="range" min="35" max="145" step="1" value="65"><output id="thv">65°</output></div>
+  <div class="row"><label for="tl">ميل المستقيم ل₁</label><input id="tl" type="range" min="-15" max="15" step="1" value="0" disabled><output id="tlv">0°</output></div>
+  <div class="row"><label for="par">مستقيمان متوازيان</label><input id="par" type="checkbox" checked><span class="badge p" id="bd">ل₁ ∥ ل₂</span></div>
+  <div class="chips" style="margin-top:6px">
+   <button id="vTop">عرض علوي</button><button id="v3d">عرض مجسم</button>
+  </div>
+
+  <h2>اختر علاقة بين زاويتين</h2>
+  <div class="chips" id="rels"></div>
+  <div class="chips" id="prs" style="margin-top:8px"></div>
+
+  <h2>النتيجة</h2>
+  <div class="read" id="read"></div>
+
+  <h2>قياسات الزوايا الثماني</h2>
+  <div class="tbl" id="tbl"></div>
+ </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+const D=Math.PI/180, H=2.2, R=1.25;
+const REL=[
+ {n:'متناظرتان',p:[[1,5],[2,6],[3,7],[4,8]],t:'eq',al:0,r:'إذا قطع قاطعٌ مستقيمين متوازيين فكل زاويتين متناظرتين متساويتان.'},
+ {n:'متبادلتان داخلياً',p:[[3,6],[4,5]],t:'eq',al:0,r:'إذا قطع قاطعٌ مستقيمين متوازيين فكل زاويتين متبادلتين داخلياً متساويتان.'},
+ {n:'متبادلتان خارجياً',p:[[1,8],[2,7]],t:'eq',al:0,r:'إذا قطع قاطعٌ مستقيمين متوازيين فكل زاويتين متبادلتين خارجياً متساويتان.'},
+ {n:'داخليتان في جهة واحدة',p:[[3,5],[4,6]],t:'su',al:0,r:'إذا قطع قاطعٌ مستقيمين متوازيين فكل زاويتين داخليتين في جهة واحدة متكاملتان (مجموعهما 180°).'},
+ {n:'خارجيتان في جهة واحدة',p:[[1,7],[2,8]],t:'su',al:0,r:'إذا قطع قاطعٌ مستقيمين متوازيين فكل زاويتين خارجيتين في جهة واحدة متكاملتان.'},
+ {n:'متقابلتان بالرأس',p:[[1,4],[2,3],[5,8],[6,7]],t:'eq',al:1,r:'الزاويتان المتقابلتان بالرأس متساويتان دائماً.'},
+ {n:'متجاورتان على استقامة',p:[[1,2],[3,4],[1,3],[2,4],[5,6],[7,8],[5,7],[6,8]],t:'su',al:1,r:'الزاويتان المتجاورتان على مستقيم متكاملتان دائماً.'}
+];
+const st={th:65,tilt:0,par:true,rel:null,pi:0,single:null};
+const m=new Array(9).fill(0);
+const $=s=>document.querySelector(s), rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const f=n=>String(Math.round(n*10)/10);
+
+/* ---------- المشهد ---------- */
+const cv=$('#cv'), stage=$('#stage');
+const ren=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+ren.setPixelRatio(Math.min(2,devicePixelRatio||1));
+const sc=new THREE.Scene(), cam=new THREE.PerspectiveCamera(38,1,.1,100);
+cam.position.set(0,0,13);
+sc.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.7); dl.position.set(3,5,8); sc.add(dl);
+const root=new THREE.Group(); sc.add(root);
+
+const board=new THREE.Mesh(new THREE.PlaneGeometry(11,8),new THREE.MeshBasicMaterial({color:0x1d5258,transparent:true,opacity:.55,side:2}));
+board.position.z=-.08; root.add(board);
+const gp=[]; for(let i=-5;i<=5;i++){gp.push(i,-4,0,i,4,0)} for(let j=-4;j<=4;j++){gp.push(-5.5,j,0,5.5,j,0)}
+const gg=new THREE.BufferGeometry(); gg.setAttribute('position',new THREE.Float32BufferAttribute(gp,3));
+const grid=new THREE.LineSegments(gg,new THREE.LineBasicMaterial({color:0x3a7a80,transparent:true,opacity:.35})); grid.position.z=-.06; root.add(grid);
+const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(11,8)),new THREE.LineBasicMaterial({color:0x6fb7bd})); frame.position.z=-.08; root.add(frame);
+
+const cyl=new THREE.CylinderGeometry(.05,.05,1,16);
+function mkLine(c,w){const o=new THREE.Mesh(cyl,new THREE.MeshLambertMaterial({color:c}));o.scale.set(w,10.4,w);root.add(o);return o}
+const lnTop=mkLine(0xf1f5ee,1), lnBot=mkLine(0xf1f5ee,1), lnT=mkLine(0xffa94d,1.15);
+const dotG=new THREE.SphereGeometry(.11,16,12);
+const dots=[0,1].map(()=>{const d=new THREE.Mesh(dotG,new THREE.MeshLambertMaterial({color:0xffffff}));d.position.z=.02;root.add(d);return d});
+
+const sec=[null], lab=[null];
+function mkLabel(k){
+ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d');
+ g.fillStyle='#0e2b2e'; g.beginPath(); g.arc(64,64,52,0,7); g.fill();
+ g.lineWidth=6; g.strokeStyle='#f1f5ee'; g.stroke();
+ g.fillStyle='#f1f5ee'; g.font='600 64px Tahoma,Arial,sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(k,64,68);
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));
+ s.scale.set(.5,.5,1); s.renderOrder=5; return s;
+}
+for(let k=1;k<=8;k++){
+ const mt=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.6,side:2,depthWrite:false});
+ const s=new THREE.Mesh(new THREE.CircleGeometry(R,48,0,1),mt);
+ s.userData={k,z:0,tz:0,op:.6,c:new THREE.Vector3(),d:[1,0]}; root.add(s); sec.push(s);
+ const l=mkLabel(k); root.add(l); lab.push(l);
+}
+
+function build(){
+ const t=st.th*D, s=H/Math.sin(t), dir=new THREE.Vector3(Math.cos(t),Math.sin(t),0);
+ const P=[dir.clone().multiplyScalar(s),dir.clone().multiplyScalar(-s)];
+ const A=[st.par?0:st.tilt,0];
+ lnT.rotation.z=t-Math.PI/2;
+ [lnTop,lnBot].forEach((ln,g)=>{ln.position.copy(P[g]);ln.rotation.z=A[g]*D-Math.PI/2;dots[g].position.x=P[g].x;dots[g].position.y=P[g].y});
+ [0,1].forEach(g=>{
+  const a=A[g], th=st.th;
+  [[th,a+180],[a,th],[a+180,th+180],[th+180,a+360]].forEach((r,i)=>{
+   const k=g*4+i+1, u=sec[k].userData;
+   m[k]=r[1]-r[0];
+   sec[k].geometry.dispose();
+   sec[k].geometry=new THREE.CircleGeometry(R,56,r[0]*D,m[k]*D);
+   u.c.copy(P[g]); u.d=[Math.cos((r[0]+m[k]/2)*D),Math.sin((r[0]+m[k]/2)*D)];
+   sec[k].position.x=P[g].x; sec[k].position.y=P[g].y;
+  });
+ });
+ paint();
+}
+function sel(){
+ if(st.single) return [st.single];
+ if(st.rel!==null) return REL[st.rel].p[st.pi];
+ return [];
+}
+function paint(){
+ const S=sel(), act=S.length>0;
+ for(let k=1;k<=8;k++){
+  const u=sec[k].userData, on=S.includes(k);
+  let c=Math.abs(m[k]-90)<.05?0xffe08a:(m[k]<90?0x8ee3a1:0xb79cff);
+  if(on&&S.length===2) c=(k===S[0])?0xff5d8f:0x35d0ff;
+  sec[k].material.color.setHex(c);
+  u.op=act?(on?.92:.12):.6; u.tz=on?.7:0;
+  lab[k].material.opacity=act&&!on?.35:1;
+ }
+ ui();
+}
+
+/* ---------- الواجهة ---------- */
+function ui(){
+ const par=Math.abs(st.par?0:st.tilt)<.05;
+ const bd=$('#bd'); bd.textContent=par?'ل₁ ∥ ل₂':'ل₁ ∦ ل₂'; bd.className='badge '+(par?'p':'n');
+ $('#thv').textContent=st.th+'°'; $('#tlv').textContent=(st.par?0:st.tilt)+'°';
+ [...$('#rels').children].forEach((b,i)=>b.classList.toggle('on',st.rel===i&&!st.single));
+ const pr=$('#prs'); pr.innerHTML='';
+ if(st.rel!==null&&!st.single){
+  REL[st.rel].p.forEach((p,i)=>{const b=document.createElement('button');b.className='pc'+(i===st.pi?' on':'');b.textContent='∠'+p[0]+' و ∠'+p[1];b.onclick=()=>{st.pi=i;paint()};pr.appendChild(b)});
+ }
+ const r=$('#read'); let h='';
+ if(st.single){
+  const k=st.single; h=`<b>∠${k} = ${f(m[k])}°</b><br>${m[k]<89.95?'زاوية حادة':m[k]>90.05?'زاوية منفرجة':'زاوية قائمة'}<p class="rule">اختر علاقة من الأعلى لمقارنتها بزاوية أخرى.</p>`;
+ }else if(st.rel!==null){
+  const R_=REL[st.rel], p=R_.p[st.pi], x=m[p[0]], y=m[p[1]];
+  h=`<b>∠${p[0]} = ${f(x)}° &nbsp; ∠${p[1]} = ${f(y)}°</b><br>`;
+  if(R_.t==='eq'){
+   const d=Math.abs(x-y), ok=d<.05;
+   if(R_.al) h+=`<span class="ok">✓ متساويتان دائماً حتى لو لم يتوازَ المستقيمان.</span>`;
+   else if(ok&&par) h+=`<span class="ok">✓ متساويتان لأن ل₁ ∥ ل₂.</span>`;
+   else if(ok) h+=`<span class="ok">✓ متساويتان (وهذا يدل على التوازي).</span>`;
+   else h+=`<span class="no">✗ غير متساويتين (الفرق ${f(d)}°) ← المستقيمان غير متوازيين.</span>`;
+  }else{
+   const sm=x+y, ok=Math.abs(sm-180)<.05;
+   h+=`المجموع = <b>${f(sm)}°</b><br>`;
+   if(R_.al) h+=`<span class="ok">✓ متكاملتان دائماً.</span>`;
+   else if(ok&&par) h+=`<span class="ok">✓ متكاملتان لأن ل₁ ∥ ل₂.</span>`;
+   else if(ok) h+=`<span class="ok">✓ مجموعهما 180° (يدل على التوازي).</span>`;
+   else h+=`<span class="no">✗ المجموع لا يساوي 180° ← المستقيمان غير متوازيين.</span>`;
+  }
+  h+=`<p class="rule">${R_.r}</p>`;
+ }else h=`<span style="color:var(--mut)">اختر علاقة بين زاويتين (مثل «متبادلتان داخلياً») أو انقر على زاوية في المجسم، ثم غيّر زاوية القاطع وراقب القياسات.</span>`;
+ r.innerHTML=h;
+ const tb=$('#tbl'); tb.innerHTML='';
+ for(let k=1;k<=8;k++){const d=document.createElement('div');d.innerHTML=`<span>∠${k}</span><em>${f(m[k])}°</em>`;tb.appendChild(d)}
+}
+REL.forEach((R_,i)=>{const b=document.createElement('button');b.textContent=R_.n;b.onclick=()=>{st.single=null;st.rel=(st.rel===i?null:i);st.pi=0;paint()};$('#rels').appendChild(b)});
+$('#th').oninput=e=>{st.th=+e.target.value;build()};
+$('#tl').oninput=e=>{st.tilt=+e.target.value;build()};
+$('#par').onchange=e=>{st.par=e.target.checked;$('#tl').disabled=st.par;build()};
+
+/* ---------- التدوير والنقر ---------- */
+let rx=-.5, ry=.55, trx=rx, try_=ry, drag=null, moved=0;
+const home=[-.5,.55];
+$('#vTop').onclick=()=>{trx=0;try_=0};
+$('#v3d').onclick=()=>{trx=home[0];try_=home[1]};
+cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};moved=0;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener('pointermove',e=>{
+ if(!drag)return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; moved+=Math.abs(dx)+Math.abs(dy);
+ try_+=dx*.008; trx=Math.max(-1.35,Math.min(1.35,trx+dy*.008)); drag={x:e.clientX,y:e.clientY};
+});
+cv.addEventListener('pointerup',e=>{
+ drag=null;
+ if(moved>6)return;
+ const b=cv.getBoundingClientRect(), v=new THREE.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1);
+ const rc=new THREE.Raycaster(); rc.setFromCamera(v,cam);
+ const hit=rc.intersectObjects(sec.slice(1))[0];
+ if(hit){st.single=hit.object.userData.k;st.rel=null;paint()}
+});
+
+function resize(){
+ const w=stage.clientWidth,h=stage.clientHeight; if(!w||!h)return;
+ ren.setSize(w,h,false); cam.aspect=w/h; cam.position.z=w/h<1?19:13; cam.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+const kk=rm?1:.14;
+function loop(){
+ rx+=(trx-rx)*kk; ry+=(try_-ry)*kk;
+ root.rotation.x=rx; root.rotation.y=ry;
+ for(let k=1;k<=8;k++){
+  const s=sec[k], u=s.userData;
+  u.z+=(u.tz-u.z)*kk; s.position.z=u.z;
+  s.material.opacity+=(u.op-s.material.opacity)*kk;
+  lab[k].position.set(u.c.x+u.d[0]*R*.62,u.c.y+u.d[1]*R*.62,u.z+.1);
+ }
+ ren.render(sc,cam); requestAnimationFrame(loop);
+}
+resize(); build(); loop();
+})();
+</script>
+</body>
+</html>
